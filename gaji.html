@@ -1,208 +1,480 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Slip Gaji - Mulai Baris 19</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 1300px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        
-        /* Tabel Style */
-        .table-container { overflow-x: auto; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1600px; }
-        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; }
-        th { background-color: #343a40; color: white; position: sticky; top: 0; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        [contenteditable="true"] { background-color: #fffdec; border: 1px dashed #ffc107; }
-
-        .btn-print { background: #28a745; color: white; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; }
-        
-        /* Print Configuration */
-        #printArea { display: none; }
-        @media print {
-            .no-print { display: none !important; }
-            #printArea { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+        * {
+            box-sizing: border-box;
         }
 
-        /* Slip Template */
-        .slip-template { width: 18cm; margin: 20px auto; padding: 30px; border: 2px solid #333; font-size: 14px; line-height: 1.5; }
-        .slip-template table td {
-    border: none !important;
-    color: #000 !important;
-    padding: 4px 0;
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
 
-.slip-template table tr:nth-child(even) {
-    background: transparent !important;
-}
+        .container {
+            max-width: 1300px;
+            margin: auto;
+        }
 
-.slip-template table {
-    width: 100% !important;
-    min-width: unset !important;
-}
-        .slip-header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; }
-        .row-flex { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .col-half { width: 48%; }
-        .total-box { border-top: 2px solid #333; margin-top: 20px; padding-top: 10px; font-weight: bold; font-size: 16px; }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        /* ===== TABEL UTAMA ===== */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        #employeeTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 1600px;
+        }
+
+        #employeeTable th,
+        #employeeTable td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+        }
+
+        #employeeTable th {
+            background: #343a40;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        #employeeTable tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+
+        [contenteditable="true"] {
+            background: #fffdec;
+        }
+
+        /* BUTTON */
+        .btn-print {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        /* ===== PRINT ===== */
+        #printArea {
+            display: none;
+        }
+
+        @media print {
+
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            #printArea {
+                display: flex;
+                justify-content: center;
+            }
+
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
+            .slip-template {
+                width: 100%;
+                padding: 20px;
+                border: 1px solid black;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* ===== SLIP ===== */
+        .slip-template {
+            width: 18cm;
+            margin: auto;
+            padding: 25px 35px;
+            border: 2px solid #333;
+            background: white;
+            font-size: 13px;
+        }
+
+        /* HEADER */
+        .slip-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .slip-header h3,
+        .slip-header h4 {
+            margin: 2px;
+        }
+
+        /* TABLE SLIP */
+        .slip-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #333;
+            margin-top: 10px;
+        }
+
+        .slip-table td {
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        .slip-table td:nth-child(2) {
+            border-right: 1px solid black;
+        }
+
+        .uraian {
+            width: 45%;
+            padding-left: 10px;
+        }
+
+        .spasi {
+            width: 5%;
+            border-right: 1px solid black;
+            /* garis tengah */
+        }
+
+        .label {
+            width: 60%;
+            padding-left: 10px;
+        }
+
+        .rp {
+            width: 10%;
+            text-align: left;
+        }
+
+        .nominal {
+            width: 35%;
+            text-align: right;
+            padding-right: 10px;
+        }
+
+        /* TOTAL */
+        .total {
+            font-weight: bold;
+        }
+
+        .uraian.total {
+            padding-left: 60px;
+            font-weight: bold;
+        }
+
+        .gaji-bersih td {
+            border-top: 2px solid black;
+            font-size: 15px;
+        }
+
+        /* FOOTER */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            text-align: center;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container no-print">
-    <div class="card">
-        <h2>Upload File Excel</h2>
-        <p>Sistem akan membaca data mulai dari <strong>Baris 19</strong> (Kolom A harus berisi angka No).</p>
-        <input type="file" id="uploadFile" accept=".xlsx, .xls">
-    </div>
+    <div class="container no-print">
+        <div class="card">
+            <h2>Upload File Excel</h2>
+            <p>Sistem akan membaca data mulai dari <strong>Baris 19</strong> (Kolom A harus berisi angka No).</p>
+            <input type="file" id="uploadFile" accept=".xlsx, .xls">
+        </div>
 
-    <div id="resultWrapper" class="card" style="display:none;">
-        <h3>Koreksi Data (Edit langsung pada tabel)</h3>
-        <div class="table-container">
-            <table id="employeeTable">
-                <thead>
-                    <tr>
-                        <th>No</th><th>Nama</th><th>Gaji Pokok</th><th>T. Struktural</th>
-                        <th>T. Fungsional</th><th>Makan</th><th>Transp</th><th>Total I</th>
-                        <th>Lain-lain</th><th>T. Kinerja</th><th>Lembur</th><th>BPJS Perus</th>
-                        <th>Total II</th><th>Pot. BPJS</th><th>Ijin</th><th>Pot. Kinerja</th>
-                        <th>Total III</th><th>Pembulatan</th><th>Pekerjaan</th><th>TOTAL IV</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
+        <div id="resultWrapper" class="card" style="display:none;">
+            <h3>Koreksi Data (Edit langsung pada tabel)</h3>
+            <div class="table-container">
+                <table id="employeeTable">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Gaji Pokok</th>
+                            <th>T. Struktural</th>
+                            <th>T. Fungsional</th>
+                            <th>Makan</th>
+                            <th>Transp</th>
+                            <th>Total I</th>
+                            <th>Lain-lain</th>
+                            <th>T. Kinerja</th>
+                            <th>Lembur</th>
+                            <th>BPJS Perus</th>
+                            <th>Total II</th>
+                            <th>Pot. BPJS</th>
+                            <th>Ijin</th>
+                            <th>Pot. Kinerja</th>
+                            <th>Total III</th>
+                            <th>Pembulatan</th>
+                            <th>Pekerjaan</th>
+                            <th>TOTAL IV</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 
-<div id="printArea"></div>
+    <div id="printArea"></div>
 
-<script>
-    document.getElementById('uploadFile').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
+    <script>
+        let bulanExcel = "";
+        document.getElementById('uploadFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
 
-        reader.onload = function(event) {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            
-            // Mengambil semua data mentah dalam bentuk array of arrays
-            // agar kita bisa menentukan index baris dengan presisi
-            const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-            // Mulai dari Row 19 (Index 18 di JavaScript)
-            const dataStartingFrom19 = rawRows.slice(18);
+                // Mengambil semua data mentah dalam bentuk array of arrays
+                // agar kita bisa menentukan index baris dengan presisi
+                const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+                // Ambil bulan dari baris 18 kolom A (index 17, 0)
+                const textBulan = rawRows[17][0] || "";
 
-            // Filter: Hanya ambil jika Kolom A (Index 0) berisi angka
-            const finalData = dataStartingFrom19.filter(row => {
-                const colA = row[0];
-                return colA !== "" && !isNaN(colA) && Number.isFinite(Number(colA));
-            });
+                // Ambil karakter seperti rumus MID
+                bulanExcel = textBulan.substring(29, 44);
 
-            renderToTable(finalData);
-        };
-        reader.readAsArrayBuffer(file);
-    });
+                // Mulai dari Row 19 (Index 18 di JavaScript)
+                const dataStartingFrom19 = rawRows.slice(18);
 
-    function renderToTable(data) {
-        const tbody = document.getElementById('tableBody');
-        const wrapper = document.getElementById('resultWrapper');
-        tbody.innerHTML = "";
-        wrapper.style.display = "block";
+                // Filter: Hanya ambil jika Kolom A (Index 0) berisi angka
+                const finalData = dataStartingFrom19.filter(row => {
+                    const colA = row[0];
+                    return colA !== "" && !isNaN(colA) && Number.isFinite(Number(colA));
+                });
 
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            // Kita mapping kolom A-T (0-19)
-            for(let i=0; i<20; i++) {
-                const td = document.createElement('td');
-                td.innerText = row[i] || "";
-                if(i > 0) td.contentEditable = true; // No. Urut jangan diedit, kolom lain silakan
-                tr.appendChild(td);
-            }
-            
-            // Tambah tombol aksi
-            const actionTd = document.createElement('td');
-            actionTd.innerHTML = `<button class="btn-print" onclick="printRow(this)">Cetak</button>`;
-            tr.appendChild(actionTd);
-            
-            tbody.appendChild(tr);
+                renderToTable(finalData);
+            };
+            reader.readAsArrayBuffer(file);
         });
-    }
+        function renderToTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const wrapper = document.getElementById('resultWrapper');
+            tbody.innerHTML = "";
+            wrapper.style.display = "block";
 
-    function printRow(btn) {
-        const tds = btn.closest('tr').querySelectorAll('td');
-        const d = Array.from(tds).slice(0,20).map(td => td.innerText);
-        console.log(d); // Pastikan data sudah benar sebelum lanjut ke template
-        const template = `
-            <div class="slip-template">
-                <div class="slip-header">
-                    <h2 style="margin:0">SLIP GAJI KARYAWAN</h2>
-                    <p>Periode: ${new Date().toLocaleDateString('id-ID', {month: 'long', year: 'numeric'})}</p>
-                </div>
-                
-                <div class="row-flex">
-                    <div>
-                        <strong>Nama:</strong> ${d[1]}<br>
-                        <strong>Pekerjaan:</strong> ${d[18]}
-                    </div>
-                    <div style="text-align:right">
-                        <strong>No:</strong> ${d[0]}
-                    </div>
-                </div>
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                // Kita mapping kolom A-T (0-19)
+                for (let i = 0; i < 20; i++) {
+                    const td = document.createElement('td');
+                    td.innerText = row[i] || "";
+                    if (i > 0) td.contentEditable = true; // No. Urut jangan diedit, kolom lain silakan
+                    tr.appendChild(td);
+                }
 
-                <div class="row-flex" style="margin-top:20px;">
-                    <div class="col-half">
-                        <strong style="border-bottom:1px solid #000">PENGHASILAN</strong>
-                        <table style="width:100%; border:none; margin-top:5px; color:black;">
-                            <tr><td style="border:none; color:black;">T. Struktural</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[3]|| 0)}</td></tr>
-                            <tr><td style="border:none; color:black;">T. Fungsional</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[4]|| 0)}</td></tr>
-                            <tr><td style="border:none; color:black;">Uang Makan</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[5]|| 0)}</td></tr>
-                            <tr><td style="border:none; color:black;">Transportasi</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[6]|| 0)}</td></tr>
-                            <tr><td style="border:none; color:black;">T. Kinerja</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[9]|| 0)}</td></tr>
-                            <tr><td style="border:none; color:black;">Lembur</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[10]|| 0)}</td></tr>
-                        </table>
-                    </div>
-                    <div class="col-half">
-                        <strong style="border-bottom:1px solid #000">POTONGAN</strong>
-                        <table style="width:100%; border:none; margin-top:5px; color:black;">
-                            <tr><td style="border:none; color:black;">BPJS</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[13] || 0)}</td></tr>
-                            <tr><td style="border:none; color:black;">Ijin/Absen</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[14] || 0)}</td></tr>
-                            <tr><td style="border:none; color:black;">Terlambat</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[15] || 0)}</td></tr>
-                            <tr><td style="border:none; color:black;">Pembulatan</td><td style="border:none; text-align:right">Rp ${formatRupiah(d[17] || 0)}</td></tr>
-                        </table>
-                    </div>
-                </div>
+                // Tambah tombol aksi
+                const actionTd = document.createElement('td');
+                actionTd.innerHTML = `<button class="btn-print" onclick="printRow(this)">Cetak</button>`;
+                tr.appendChild(actionTd);
 
-                <div class="total-box">
-                    <div class="row-flex">
-                        <span>TAKE HOME PAY (TOTAL IV)</span>
-                        <span>Rp ${formatRupiah(d[19])}</span>
-                    </div>
-                </div>
+                tbody.appendChild(tr);
+            });
+        }
 
-                <div style="margin-top:50px; display:flex; justify-content:space-between; text-align:center">
-                    <div>Penerima,<br><br><br>( ${d[1]} )</div>
-                    <div>Bendahara,<br><br><br>( .................... )</div>
-                </div>
-            </div>
-        `;
+        function printRow(btn) {
+            const tds = btn.closest('tr').querySelectorAll('td');
+            const d = Array.from(tds).slice(0, 20).map(td => td.innerText);
+            console.log(d); // Pastikan data sudah benar sebelum lanjut ke template
+            const template = `
+<div class="slip-template">
 
-        document.getElementById('printArea').innerHTML = template;
-        window.print();
-    }
+    <div class="slip-header">
+        <h3>YAYASAN KESEHATAN IMANUEL</h3>
+        <h4>Komp. ITC Marina Plaza Blok E No.4</h4>
+        <h4>BUKTI PENERIMAAN GAJI KARYAWAN</h4>
+    </div>
 
-function formatRupiah(angka){
-    if(angka === "" || angka === null || angka === undefined) return "0";
-    const number = Number(angka);
-    if(isNaN(number)) return "0";
-    return number.toLocaleString("id-ID");
-}
+    <!-- IDENTITAS -->
+    <table class="slip-table">
+        <tr>
+            <td>Bulan</td>
+            <td>: ${bulanExcel}</td>
+            <td>Nama</td>
+            <td>: ${d[1]}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td>Jabatan</td>
+            <td>: ${d[18]}</td>
+        </tr>
+    </table>
 
-</script>
+    <!-- GAJI -->
+    <table class="slip-table">
+
+        <tr>
+            <td class="uraian"><b>PENDAPATAN</b></td>
+            <td class="spasi"></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Gaji Pokok</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[2])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Struktural</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[3])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Fungsional</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[4])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Makan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[5])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Transport</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[6])}</td>
+        </tr>
+
+        <!-- TOTAL I -->
+        <tr>
+            <td class="uraian total">Total I</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[7])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Kinerja</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[9])}</td>
+        </tr>
+
+        <!-- TOTAL II -->
+        <tr>
+            <td class="uraian total">Total II</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[12])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Lembur</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[10])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Pembulatan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[17])}</td>
+        </tr>
+
+        <!-- TOTAL III -->
+        <tr>
+            <td class="uraian total">Total III</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[16])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan BPJS</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[13])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan Kinerja</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[15])}</td>
+        </tr>
+
+        <!-- GAJI BERSIH -->
+        <tr class="gaji-bersih">
+            <td class="uraian"><b>GAJI BERSIH</b></td>
+            <td class="spasi"></td>
+            <td class="rp"><b>Rp.</b></td>
+            <td class="nominal"><b>${formatRupiah(d[19])}</b></td>
+        </tr>
+
+    </table>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <div>
+            Pengurus<br>
+            YAYASAN KESEHATNAN IMANUEL<br><br><br>
+            <b><u>May Maria Santosa</u></b><br>
+            <b>Bendahara</b>
+        </div>
+        <div>
+            Manado, ${bulanExcel}<br>
+            Yang Menerima<br><br><br>
+            <b><u>${d[1]}</u></b>
+        </div>
+    </div>
+
+</div>
+`;
+            document.getElementById('printArea').innerHTML = template;
+            window.print();
+        }
+
+        function formatRupiah(angka) {
+            if (angka === "" || angka === null || angka === undefined) return "0";
+            const number = Number(angka);
+            if (isNaN(number)) return "0";
+            return number.toLocaleString("id-ID");
+        }
+
+    </script>
 
 </body>
+
 </html>
