@@ -90,22 +90,20 @@
                 display: none !important;
             }
 
-            #printArea {
-                display: flex;
-                justify-content: center;
-            }
+    #printArea {
+        display: block; /* ⬅️ WAJIB ganti dari flex ke block */
+    }
+
+    .slip-template {
+        page-break-after: always; /* ⬅️ ini kunci utama */
+            page-break-inside: avoid;
+        width: 100%;
 
             @page {
                 size: A4;
                 margin: 10mm;
             }
 
-            .slip-template {
-                width: 100%;
-                padding: 20px;
-                border: 1px solid black;
-                page-break-inside: avoid;
-            }
         }
 
         /* ===== SLIP ===== */
@@ -209,6 +207,7 @@
 
         <div id="resultWrapper" class="card" style="display:none;">
             <h3>Koreksi Data (Edit langsung pada tabel)</h3>
+            <button class="btn-print" onclick="printAll()">Cetak Semua</button>
             <div class="table-container">
                 <table id="employeeTable">
                     <thead>
@@ -472,6 +471,170 @@
             if (isNaN(number)) return "0";
             return number.toLocaleString("id-ID");
         }
+
+        function printAll() {
+    const rows = document.querySelectorAll('#tableBody tr');
+    let allTemplate = "";
+
+    rows.forEach(row => {
+        const tds = row.querySelectorAll('td');
+        const d = Array.from(tds).slice(0, 20).map(td => td.innerText);
+
+        const template = `
+<div class="slip-template">
+
+    <div class="slip-header">
+        <h3>YAYASAN KESEHATAN IMANUEL</h3>
+        <h4>Komp. ITC Marina Plaza Blok E No.4</h4>
+        <h4>BUKTI PENERIMAAN GAJI KARYAWAN</h4>
+    </div>
+
+    <table class="slip-table">
+        <tr>
+            <td>Bulan</td>
+            <td>: ${bulanExcel}</td>
+            <td>Nama</td>
+            <td>: ${d[1]}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td>Jabatan</td>
+            <td>: ${d[18]}</td>
+        </tr>
+    </table>
+
+    <table class="slip-table">
+
+        <tr>
+            <td class="uraian"><b>PENDAPATAN</b></td>
+            <td class="spasi"></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Gaji Pokok</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[2])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Struktural</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[3])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Fungsional</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[4])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Makan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[5])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Transport</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[6])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian total">Total I</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[7])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Kinerja</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[9])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian total">Total II</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[12])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Lembur</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[10])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Pembulatan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[17])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian total">Total III</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[16])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan BPJS</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[13])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan Kinerja</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[15])}</td>
+        </tr>
+
+        <tr class="gaji-bersih">
+            <td class="uraian"><b>GAJI BERSIH</b></td>
+            <td class="spasi"></td>
+            <td class="rp"><b>Rp.</b></td>
+            <td class="nominal"><b>${formatRupiah(d[19])}</b></td>
+        </tr>
+
+    </table>
+
+    <div class="footer">
+        <div>
+            Pengurus<br>
+            YAYASAN KESEHATNAN IMANUEL<br><br><br><br><br><br>
+            <b><u>May Maria Santosa</u></b><br>
+            <b>Bendahara</b>
+        </div>
+        <div>
+            Manado, ${bulanExcel}<br>
+            Yang Menerima<br><br><br><br><br><br>
+            <b><u>${d[1]}</u></b>
+        </div>
+    </div>
+
+</div>
+`;
+        allTemplate += template;
+    });
+
+    document.getElementById('printArea').innerHTML = allTemplate;
+    window.print();
+}
 
     </script>
 
