@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Slip Gaji - Mulai Baris 19</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        /* ===== TABEL UTAMA ===== */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        #employeeTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 1600px;
+        }
+
+        #employeeTable th,
+        #employeeTable td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+        }
+
+        #employeeTable th {
+            background: #343a40;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        #employeeTable tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+
+        [contenteditable="true"] {
+            background: #fffdec;
+        }
+
+        /* BUTTON */
+        .btn-print {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        /* PRINT AREA (DEFAULT HIDDEN) */
+        #printArea {
+            display: none;
+        }
+
+        /* ================= PRINT ================= */
+        @media print {
+
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            #printArea {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+
+            /* ===== SLIP ===== */
+            .slip-template {
+                width: 48%;
+                /* 2 slip sejajar */
+                height: auto;
+                display: block;
+                margin: 10px;
+
+                border: 1px solid #333;
+                padding: 10px;
+                background: white;
+                font-size: 12px;
+
+                box-sizing: border-box;
+                page-break-inside: avoid;
+
+            }
+
+            /* HEADER */
+            .slip-header {
+                text-align: center;
+                margin-bottom: 8px;
+            }
+
+            .slip-header h3 {
+                font-size: 13px;
+                margin: 2px;
+            }
+
+            .slip-header h4 {
+
+                font-size: 11px;
+                margin: 2px;
+            }
+
+            /* TABLE SLIP */
+            .slip-table {
+                width: 100%;
+                border-collapse: collapse;
+                border: 1px solid #333;
+                margin-top: 8px;
+            }
+
+            .slip-table td {
+                padding: 3px 4px;
+                vertical-align: top;
+                font-size: 10px;
+            }
+
+            .slip-table td:nth-child(2) {
+                border-right: 1px solid black;
+            }
+
+            .uraian {
+                width: 45%;
+                padding-left: 8px;
+            }
+
+            .spasi {
+                width: 5%;
+                border-right: 1px solid black;
+            }
+
+            .rp {
+                width: 10%;
+                text-align: left;
+            }
+
+            .nominal {
+                width: 35%;
+                text-align: right;
+                padding-right: 8px;
+            }
+
+            /* TOTAL */
+            .total {
+                font-weight: bold;
+            }
+
+            .uraian.total {
+                padding-left: 40px;
+            }
+
+            .gaji-bersih td {
+                border-top: 2px solid black;
+                font-size: 13px;
+            }
+
+            /* FOOTER */
+            .footer {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 10px;
+                text-align: center;
+                font-size: 10px;
+            }
+
+            /* ⬇️ LANDSCAPE */
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+
+            /* ⬇️ 2 slip = 1 halaman */
+            .slip-template:nth-child(2n) {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+</head>
+
+<body>
+
+    <div class="container no-print">
+        <div class="card">
+            <h2>Upload File Excel</h2>
+            <p>Sistem akan membaca data mulai dari <strong>Baris 19</strong> (Kolom A harus berisi angka No).</p>
+            <input type="file" id="uploadFile" accept=".xlsx, .xls">
+        </div>
+
+        <div id="resultWrapper" class="card" style="display:none;">
+            <h3>Koreksi Data (Edit langsung pada tabel)</h3>
+            <button class="btn-print" onclick="printAll()">Cetak Semua</button>
+            <div class="table-container">
+                <table id="employeeTable">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Gaji Pokok</th>
+                            <th>T. Struktural</th>
+                            <th>T. Fungsional</th>
+                            <th>T. Lain-lain</th>
+                            <th>T. Kinerja</th>
+                            <th>Total I</th>
+                            <th>Makan</th>
+                            <th>Transp</th>
+                            <th>Lembur</th>
+                            <th>Jasa Tindakan</th>
+                            <th>Total II</th>
+                            <th>Pot. BPJS</th>
+                            <th>Pot. Ijin</th>
+                            <th>Pot. Kinerja</th>
+                            <th>Total III</th>
+                            <th>Pembulatan</th>
+                            <th>Pekerjaan</th>
+                            <th>TOTAL IV</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea"></div>
+
+    <script>
+        let bulanExcel = "";
+        document.getElementById('uploadFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+                // Mengambil semua data mentah dalam bentuk array of arrays
+                // agar kita bisa menentukan index baris dengan presisi
+                const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+                // Ambil bulan dari baris 1 kolom A (index 0, 0)
+                const textBulan = rawRows[0][0] || "";
+
+                // Ambil karakter seperti rumus MID
+                bulanExcel = textBulan.substring(29, 44);
+
+                // Mulai dari Row 4 (Index 3 di JavaScript)
+                const dataStarting = rawRows.slice(3);
+
+                // Filter: Hanya ambil jika Kolom A (Index 0) berisi angka
+                const finalData = dataStarting.filter(row => {
+                    const colA = row[0];
+                    return colA !== "" && row[0] !== "" && !isNaN(colA) && Number.isFinite(Number(colA));
+                });
+
+                renderToTable(finalData);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        function renderToTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const wrapper = document.getElementById('resultWrapper');
+            tbody.innerHTML = "";
+            wrapper.style.display = "block";
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+
+                // Mapping kolom (skip K = index 10, skip P = index 15)
+                const selectedColumns = [
+                    0,  // A - No
+                    1,  // B - Nama
+                    2,  // C - Gaji Pokok
+                    3,  // D - Struktural
+                    4,  // E - Fungsional
+                    5,  // F - Tunjangan lain
+                    6,  // G - Kinerja
+                    7,  // H - Total I
+                    8,  // I - Makan
+                    9,  // J - Transport
+                    // 10 (K) DIHAPUS
+                    11, // L - Lembur
+                    12, // M - Jasa
+                    13, // N - Total II
+                    14, // O - BPJS
+                    // 15 (P) DIHAPUS
+                    16, // Q - Ijin
+                    17, // R - Pot Kinerja
+                    18, // S - Total III
+                    19, // T - Pembulatan
+                    20, // U - Jabatan
+                    21  // V - Total IV
+                ];
+
+                selectedColumns.forEach((colIndex, i) => {
+                    const td = document.createElement('td');
+                    td.innerText = row[colIndex] || "";
+
+                    // Semua editable kecuali nama (opsional, bisa kamu ubah)
+                    td.contentEditable = true;
+
+                    tr.appendChild(td);
+                });
+                // Tambah tombol aksi
+                const actionTd = document.createElement('td');
+                actionTd.innerHTML = `<button class="btn-print" onclick="printRow(this)">Cetak</button>`;
+                tr.appendChild(actionTd);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function printRow(btn) {
+            const tds = btn.closest('tr').querySelectorAll('td');
+            const d = Array.from(tds).slice(0, 20).map(td => td.innerText);
+            console.log(d); // Pastikan data sudah benar sebelum lanjut ke template
+            const template = `
+<div class="slip-template">
+
+    <div class="slip-header">
+        <h3>YAYASAN KESEHATAN IMANUEL</h3>
+        <h4>Komp. ITC Marina Plaza Blok E No.4</h4>
+        <h4>BUKTI PENERIMAAN GAJI KARYAWAN</h4>
+    </div>
+
+    <!-- IDENTITAS -->
+    <table class="slip-table">
+        <tr>
+            <td>Bulan</td>
+            <td>: ${bulanExcel}</td>
+            <td>Nama</td>
+            <td>: ${d[1]}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td>Jabatan</td>
+            <td>: ${d[18]}</td>
+        </tr>
+    </table>
+
+    <!-- GAJI -->
+    <table class="slip-table">
+
+        <tr>
+            <td class="uraian"><b>PENDAPATAN</b></td>
+            <td class="spasi"></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Gaji Pokok</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[2])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Struktural</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[3])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Fungsional</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[4])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Lain-Lain </td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[5])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Kinerja</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[6])}</td>
+        </tr>
+
+        <!-- TOTAL I -->
+        <tr>
+            <td class="uraian total">Total I</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[7])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Uang Makan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[8])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Uang Transport</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[9])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Uang Lembur</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[10])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Jasa Tindakan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[11])}</td>
+        </tr>
+
+        <!-- TOTAL II -->
+        <tr>
+            <td class="uraian total">Total II</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[12])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan BPJS/TK</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[13])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan Ijin</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[14])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan Kinerja</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[15])}</td>
+        </tr>
+
+        <!-- TOTAL III -->
+        <tr>
+            <td class="uraian total">Total III</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[16])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Pembulatan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[17])}</td>
+        </tr>
+
+        <!-- GAJI BERSIH -->
+        <tr class="gaji-bersih">
+            <td class="uraian"><b>GAJI BERSIH</b></td>
+            <td class="spasi"></td>
+            <td class="rp"><b>Rp.</b></td>
+            <td class="nominal"><b>${formatRupiah(d[19])}</b></td>
+        </tr>
+
+    </table>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <div>
+            Pengurus<br>
+            YAYASAN KESEHATNAN IMANUEL<br><br><br><br><br><br>
+            <b><u>May Maria Santosa</u></b><br>
+            <b>Bendahara</b>
+        </div>
+        <div>
+            Manado, ${bulanExcel}<br>
+            Yang Menerima<br><br><br><br><br><br>
+            <b><u>${d[1]}</u></b>
+        </div>
+    </div>
+
+</div>
+`;
+            document.getElementById('printArea').innerHTML = template;
+            window.print();
+        }
+
+        function formatRupiah(angka) {
+            if (angka === "" || angka === null || angka === undefined) return "0";
+            const number = Number(angka);
+            if (isNaN(number)) return "0";
+            return number.toLocaleString("id-ID");
+        }
+
+        function printAll() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            let allTemplate = "";
+
+            rows.forEach(row => {
+                const tds = row.querySelectorAll('td');
+                const d = Array.from(tds).slice(0, 20).map(td => td.innerText);
+
+                const template = `
+<div class="slip-template">
+
+    <div class="slip-header">
+        <h3>YAYASAN KESEHATAN IMANUEL</h3>
+        <h4>Komp. ITC Marina Plaza Blok E No.4</h4>
+        <h4>BUKTI PENERIMAAN GAJI KARYAWAN</h4>
+    </div>
+
+    <!-- IDENTITAS -->
+    <table class="slip-table">
+        <tr>
+            <td>Bulan</td>
+            <td>: ${bulanExcel}</td>
+            <td>Nama</td>
+            <td>: ${d[1]}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td>Jabatan</td>
+            <td>: ${d[18]}</td>
+        </tr>
+    </table>
+
+    <!-- GAJI -->
+    <table class="slip-table">
+
+        <tr>
+            <td class="uraian"><b>PENDAPATAN</b></td>
+            <td class="spasi"></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Gaji Pokok</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[2])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Struktural</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[3])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Fungsional</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[4])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Lain-Lain </td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[5])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Tunjangan Kinerja</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[6])}</td>
+        </tr>
+
+        <!-- TOTAL I -->
+        <tr>
+            <td class="uraian total">Total I</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[7])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Uang Makan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[8])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Uang Transport</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[9])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Uang Lembur</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[10])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Jasa Tindakan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[11])}</td>
+        </tr>
+
+        <!-- TOTAL II -->
+        <tr>
+            <td class="uraian total">Total II</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[12])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan BPJS/TK</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[13])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan Ijin</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[14])}</td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Potongan Kinerja</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[15])}</td>
+        </tr>
+
+        <!-- TOTAL III -->
+        <tr>
+            <td class="uraian total">Total III</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal"><b>${formatRupiah(d[16])}</b></td>
+        </tr>
+
+        <tr>
+            <td class="uraian">Pembulatan</td>
+            <td class="spasi"></td>
+            <td class="rp">Rp.</td>
+            <td class="nominal">${formatRupiah(d[17])}</td>
+        </tr>
+
+        <!-- GAJI BERSIH -->
+        <tr class="gaji-bersih">
+            <td class="uraian"><b>GAJI BERSIH</b></td>
+            <td class="spasi"></td>
+            <td class="rp"><b>Rp.</b></td>
+            <td class="nominal"><b>${formatRupiah(d[19])}</b></td>
+        </tr>
+
+    </table>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <div>
+            Pengurus<br>
+            YAYASAN KESEHATNAN IMANUEL<br><br><br><br><br><br>
+            <b><u>May Maria Santosa</u></b><br>
+            <b>Bendahara</b>
+        </div>
+        <div>
+            Manado, ${bulanExcel}<br>
+            Yang Menerima<br><br><br><br><br><br>
+            <b><u>${d[1]}</u></b>
+        </div>
+    </div>
+
+</div>
+`;
+                allTemplate += template;
+            });
+
+            document.getElementById('printArea').innerHTML = allTemplate;
+            window.print();
+        }
+    </script>
+
+</body>
+
+</html>
