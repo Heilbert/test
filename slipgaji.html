@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Slip Gaji - Mulai Baris 19</title>
+    <title>Sistem Slip Gaji</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -214,7 +214,6 @@
     <div class="container no-print">
         <div class="card">
             <h2>Upload File Excel</h2>
-            <p>Sistem akan membaca data mulai dari <strong>Baris 19</strong> (Kolom A harus berisi angka No).</p>
             <input type="file" id="uploadFile" accept=".xlsx, .xls">
         </div>
 
@@ -227,8 +226,9 @@
                         <tr>
                             <th>No</th>
                             <th>Nama</th>
+                            <th>Masa Kerja Awal</th>
                             <th>Gaji Pokok</th>
-                            <th>T. Struktural</th>
+                            <th>T. Jabatan</th>
                             <th>T. Fungsional</th>
                             <th>T. Lain-lain</th>
                             <th>T. Kinerja</th>
@@ -236,15 +236,17 @@
                             <th>Makan</th>
                             <th>Transp</th>
                             <th>Lembur</th>
+                            <th>Hari Kerja</th>
                             <th>Jasa Tindakan</th>
                             <th>Total II</th>
                             <th>Pot. BPJS</th>
                             <th>Pot. Ijin</th>
-                            <th>Pot. Kinerja</th>
+                            <th>Pot. Keterlambatan</th>
                             <th>Total III</th>
                             <th>Pembulatan</th>
                             <th>Pekerjaan</th>
                             <th>TOTAL IV</th>
+                            <th>Rekening</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -265,24 +267,44 @@
             reader.onload = function (event) {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const sheetName = "Rincian";
+
+                // Validasi supaya tidak error
+                if (!workbook.Sheets[sheetName]) {
+                    alert("Sheet 'Rincian' tidak ditemukan!");
+                    return;
+                }
+
+                const sheet = workbook.Sheets[sheetName];
 
                 // Mengambil semua data mentah dalam bentuk array of arrays
                 // agar kita bisa menentukan index baris dengan presisi
                 const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
                 // Ambil bulan dari baris 1 kolom A (index 0, 0)
-                const textBulan = rawRows[0][0] || "";
+                const textBulan = rawRows[32][1] || "";
 
                 // Ambil karakter seperti rumus MID
-                bulanExcel = textBulan.substring(29, 44);
+                const text = textBulan.toUpperCase();
+
+                // Posisi kata "PEGAWAI"
+                const start = text.indexOf("PEGAWAI");
+
+                // Posisi "("
+                const end = text.indexOf("(");
+
+                if (start !== -1 && end !== -1) {
+                    bulanExcel = text.substring(start + 8, end).trim();
+                } else {
+                    bulanExcel = textBulan;
+                }
 
                 // Mulai dari Row 4 (Index 3 di JavaScript)
-                const dataStarting = rawRows.slice(3);
+                const dataStarting = rawRows.slice(36);
 
                 // Filter: Hanya ambil jika Kolom A (Index 0) berisi angka
                 const finalData = dataStarting.filter(row => {
-                    const colA = row[0];
-                    return colA !== "" && row[0] !== "" && !isNaN(colA) && Number.isFinite(Number(colA));
+                    const colA = row[1];
+                    return colA !== "" && row[1] !== "" && !isNaN(colA) && Number.isFinite(Number(colA));
                 });
 
                 renderToTable(finalData);
@@ -300,28 +322,31 @@
 
                 // Mapping kolom (skip K = index 10, skip P = index 15)
                 const selectedColumns = [
-                    0,  // A - No
-                    1,  // B - Nama
-                    2,  // C - Gaji Pokok
-                    3,  // D - Struktural
-                    4,  // E - Fungsional
-                    5,  // F - Tunjangan lain
-                    6,  // G - Kinerja
-                    7,  // H - Total I
-                    8,  // I - Makan
-                    9,  // J - Transport
-                    // 10 (K) DIHAPUS
-                    11, // L - Lembur
-                    12, // M - Jasa
-                    13, // N - Total II
-                    14, // O - BPJS
-                    // 15 (P) DIHAPUS
-                    16, // Q - Ijin
-                    17, // R - Pot Kinerja
-                    18, // S - Total III
-                    19, // T - Pembulatan
-                    20, // U - Jabatan
-                    21  // V - Total IV
+                    1,  // B - No
+                    2,  // C - Nama
+                    3,  // D - Masa Kerja Awal
+                    4,  // E - Gaji Pokok
+                    5,  // F - Struktural
+                    6,  // G - Fungsional
+                    7,  // H - Tunjangan lain
+                    8,  // I - Kinerja
+                    9,  // J - Total I
+                    10,  // K - Makan
+                    11,  // L - Transport
+                    // 12 (M) DIHAPUS
+                    13, // N - Lembur
+                    14, // O - Hari Kerja
+                    15, // P - Jasa Tindakan
+                    16, // Q - Total II
+                    17, // R - BPJS
+                    // 18 (S) DIHAPUS
+                    19, // T - Ijin
+                    20, // U - Pot Keterlambatan
+                    21, // V - Total III
+                    22, // W - Pembulatan
+                    23, // X - Pekerjaan
+                    24, // Y - Total IV
+                    25  // Z - Rekening
                 ];
 
                 selectedColumns.forEach((colIndex, i) => {
@@ -344,185 +369,193 @@
 
         function printRow(btn) {
             const tds = btn.closest('tr').querySelectorAll('td');
-            const d = Array.from(tds).slice(0, 20).map(td => td.innerText);
+            const d = Array.from(tds).slice(0, 23).map(td => td.innerText);
             console.log(d); // Pastikan data sudah benar sebelum lanjut ke template
-            const template = `
-<div class="slip-template">
+            const template = 
+            `
+            <div class="slip-template">
 
-    <div class="slip-header">
-        <h3>YAYASAN KESEHATAN IMANUEL</h3>
-        <h4>Komp. ITC Marina Plaza Blok E No.4</h4>
-        <h4>BUKTI PENERIMAAN GAJI KARYAWAN</h4>
-    </div>
+                <div class="slip-header">
+                    <h3>YAYASAN KESEHATAN IMANUEL</h3>
+                    <h4>Komp. ITC Marina Plaza Blok E No.4</h4>
+                    <h4>BUKTI PENERIMAAN GAJI KARYAWAN</h4>
+                </div>
 
-    <!-- IDENTITAS -->
-    <table class="slip-table">
-        <tr>
-            <td>Bulan</td>
-            <td>: ${bulanExcel}</td>
-            <td>Nama</td>
-            <td>: ${d[1]}</td>
-        </tr>
-        <tr>
-            <td></td>
-            <td></td>
-            <td>Jabatan</td>
-            <td>: ${d[18]}</td>
-        </tr>
-    </table>
+                <!-- IDENTITAS -->
+                <table class="slip-table">
+                    <tr>
+                        <td>Bulan</td>
+                        <td>: ${bulanExcel}</td>
+                        <td>Nama</td>
+                        <td>: ${d[1]}</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td>Jabatan</td>
+                        <td>: ${d[20]}</td>
+                    </tr>
+                </table>
 
-    <!-- GAJI -->
-    <table class="slip-table">
+                <!-- GAJI -->
+                <table class="slip-table">
 
-        <tr>
-            <td class="uraian"><b>PENDAPATAN</b></td>
-            <td class="spasi"></td>
-            <td></td>
-            <td></td>
-        </tr>
+                    <tr>
+                        <td class="uraian"><b>PENDAPATAN</b></td>
+                        <td class="spasi"></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Gaji Pokok</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[2])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Gaji Pokok</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[3])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Tunjangan Struktural</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[3])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Tunjangan Struktural</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[4])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Tunjangan Fungsional</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[4])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Tunjangan Fungsional</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[5])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Tunjangan Lain-Lain </td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[5])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Tunjangan Lain-Lain </td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[6])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Tunjangan Kinerja</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[6])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Tunjangan Kinerja</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[7])}</td>
+                    </tr>
 
-        <!-- TOTAL I -->
-        <tr>
-            <td class="uraian total">Total I</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal"><b>${formatRupiah(d[7])}</b></td>
-        </tr>
+                    <!-- TOTAL I -->
+                    <tr>
+                        <td class="uraian total">Total I</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal"><b>${formatRupiah(d[8])}</b></td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Uang Makan</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[8])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Uang Makan</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[9])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Uang Transport</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[9])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Uang Transport</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[10])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Uang Lembur</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[10])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Uang Lembur</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[11])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Jasa Tindakan</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[11])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Hari Kerja</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[12])}</td>
+                    </tr>
 
-        <!-- TOTAL II -->
-        <tr>
-            <td class="uraian total">Total II</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal"><b>${formatRupiah(d[12])}</b></td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Jasa Tindakan</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[13])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Potongan BPJS/TK</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[13])}</td>
-        </tr>
+                    <!-- TOTAL II -->
+                    <tr>
+                        <td class="uraian total">Total II</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal"><b>${formatRupiah(d[14])}</b></td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Potongan Ijin</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[14])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Potongan BPJS/TK</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[15])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Potongan Kinerja</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[15])}</td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Potongan Ijin</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[16])}</td>
+                    </tr>
 
-        <!-- TOTAL III -->
-        <tr>
-            <td class="uraian total">Total III</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal"><b>${formatRupiah(d[16])}</b></td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Potongan Kinerja</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[17])}</td>
+                    </tr>
 
-        <tr>
-            <td class="uraian">Pembulatan</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[17])}</td>
-        </tr>
+                    <!-- TOTAL III -->
+                    <tr>
+                        <td class="uraian total">Total III</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal"><b>${formatRupiah(d[18])}</b></td>
+                    </tr>
 
-        <!-- GAJI BERSIH -->
-        <tr class="gaji-bersih">
-            <td class="uraian"><b>GAJI BERSIH</b></td>
-            <td class="spasi"></td>
-            <td class="rp"><b>Rp.</b></td>
-            <td class="nominal"><b>${formatRupiah(d[19])}</b></td>
-        </tr>
+                    <tr>
+                        <td class="uraian">Pembulatan</td>
+                        <td class="spasi"></td>
+                        <td class="rp">Rp.</td>
+                        <td class="nominal">${formatRupiah(d[19])}</td>
+                    </tr>
 
-    </table>
+                    <!-- GAJI BERSIH -->
+                    <tr class="gaji-bersih">
+                        <td class="uraian"><b>GAJI BERSIH</b></td>
+                        <td class="spasi"></td>
+                        <td class="rp"><b>Rp.</b></td>
+                        <td class="nominal"><b>${formatRupiah(d[21])}</b></td>
+                    </tr>
 
-    <!-- FOOTER -->
-    <div class="footer">
-        <div>
-            Pengurus<br>
-            YAYASAN KESEHATNAN IMANUEL<br><br><br><br><br><br>
-            <b><u>May Maria Santosa</u></b><br>
-            <b>Bendahara</b>
-        </div>
-        <div>
-            Manado, ${bulanExcel}<br>
-            Yang Menerima<br><br><br><br><br><br>
-            <b><u>${d[1]}</u></b>
-        </div>
-    </div>
+                </table>
 
-</div>
-`;
+                <!-- FOOTER -->
+                <div class="footer">
+                    <div>
+                        Pengurus<br>
+                        YAYASAN KESEHATNAN IMANUEL<br><br><br><br><br><br>
+                        <b><u>May Maria Santosa</u></b><br>
+                        <b>Bendahara</b>
+                    </div>
+                    <div>
+                        Manado, ${bulanExcel}<br>
+                        Yang Menerima<br><br><br><br><br><br>
+                        <b><u>${d[1]}</u></b>
+                    </div>
+                </div>
+
+            </div>
+           `;
             document.getElementById('printArea').innerHTML = template;
             window.print();
         }
@@ -540,184 +573,192 @@
 
             rows.forEach(row => {
                 const tds = row.querySelectorAll('td');
-                const d = Array.from(tds).slice(0, 20).map(td => td.innerText);
+                const d = Array.from(tds).slice(0, 23).map(td => td.innerText);
 
-                const template = `
-<div class="slip-template">
+                const template = 
+                `
+                <div class="slip-template">
 
-    <div class="slip-header">
-        <h3>YAYASAN KESEHATAN IMANUEL</h3>
-        <h4>Komp. ITC Marina Plaza Blok E No.4</h4>
-        <h4>BUKTI PENERIMAAN GAJI KARYAWAN</h4>
-    </div>
+                    <div class="slip-header">
+                        <h3>YAYASAN KESEHATAN IMANUEL</h3>
+                        <h4>Komp. ITC Marina Plaza Blok E No.4</h4>
+                        <h4>BUKTI PENERIMAAN GAJI KARYAWAN</h4>
+                    </div>
 
-    <!-- IDENTITAS -->
-    <table class="slip-table">
-        <tr>
-            <td>Bulan</td>
-            <td>: ${bulanExcel}</td>
-            <td>Nama</td>
-            <td>: ${d[1]}</td>
-        </tr>
-        <tr>
-            <td></td>
-            <td></td>
-            <td>Jabatan</td>
-            <td>: ${d[18]}</td>
-        </tr>
-    </table>
+                    <!-- IDENTITAS -->
+                    <table class="slip-table">
+                        <tr>
+                            <td>Bulan</td>
+                            <td>: ${bulanExcel}</td>
+                            <td>Nama</td>
+                            <td>: ${d[1]}</td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td>Jabatan</td>
+                            <td>: ${d[20]}</td>
+                        </tr>
+                    </table>
 
-    <!-- GAJI -->
-    <table class="slip-table">
+                    <!-- GAJI -->
+                    <table class="slip-table">
 
-        <tr>
-            <td class="uraian"><b>PENDAPATAN</b></td>
-            <td class="spasi"></td>
-            <td></td>
-            <td></td>
-        </tr>
+                        <tr>
+                            <td class="uraian"><b>PENDAPATAN</b></td>
+                            <td class="spasi"></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Gaji Pokok</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[2])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Gaji Pokok</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[3])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Tunjangan Struktural</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[3])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Tunjangan Struktural</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[4])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Tunjangan Fungsional</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[4])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Tunjangan Fungsional</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[5])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Tunjangan Lain-Lain </td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[5])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Tunjangan Lain-Lain </td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[6])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Tunjangan Kinerja</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[6])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Tunjangan Kinerja</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[7])}</td>
+                        </tr>
 
-        <!-- TOTAL I -->
-        <tr>
-            <td class="uraian total">Total I</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal"><b>${formatRupiah(d[7])}</b></td>
-        </tr>
+                        <!-- TOTAL I -->
+                        <tr>
+                            <td class="uraian total">Total I</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal"><b>${formatRupiah(d[8])}</b></td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Uang Makan</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[8])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Uang Makan</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[9])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Uang Transport</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[9])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Uang Transport</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[10])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Uang Lembur</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[10])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Uang Lembur</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[11])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Jasa Tindakan</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[11])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Hari Kerja</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[12])}</td>
+                        </tr>
 
-        <!-- TOTAL II -->
-        <tr>
-            <td class="uraian total">Total II</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal"><b>${formatRupiah(d[12])}</b></td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Jasa Tindakan</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[13])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Potongan BPJS/TK</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[13])}</td>
-        </tr>
+                        <!-- TOTAL II -->
+                        <tr>
+                            <td class="uraian total">Total II</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal"><b>${formatRupiah(d[14])}</b></td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Potongan Ijin</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[14])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Potongan BPJS/TK</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[15])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Potongan Kinerja</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[15])}</td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Potongan Ijin</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[16])}</td>
+                        </tr>
 
-        <!-- TOTAL III -->
-        <tr>
-            <td class="uraian total">Total III</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal"><b>${formatRupiah(d[16])}</b></td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Potongan Kinerja</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[17])}</td>
+                        </tr>
 
-        <tr>
-            <td class="uraian">Pembulatan</td>
-            <td class="spasi"></td>
-            <td class="rp">Rp.</td>
-            <td class="nominal">${formatRupiah(d[17])}</td>
-        </tr>
+                        <!-- TOTAL III -->
+                        <tr>
+                            <td class="uraian total">Total III</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal"><b>${formatRupiah(d[18])}</b></td>
+                        </tr>
 
-        <!-- GAJI BERSIH -->
-        <tr class="gaji-bersih">
-            <td class="uraian"><b>GAJI BERSIH</b></td>
-            <td class="spasi"></td>
-            <td class="rp"><b>Rp.</b></td>
-            <td class="nominal"><b>${formatRupiah(d[19])}</b></td>
-        </tr>
+                        <tr>
+                            <td class="uraian">Pembulatan</td>
+                            <td class="spasi"></td>
+                            <td class="rp">Rp.</td>
+                            <td class="nominal">${formatRupiah(d[19])}</td>
+                        </tr>
 
-    </table>
+                        <!-- GAJI BERSIH -->
+                        <tr class="gaji-bersih">
+                            <td class="uraian"><b>GAJI BERSIH</b></td>
+                            <td class="spasi"></td>
+                            <td class="rp"><b>Rp.</b></td>
+                            <td class="nominal"><b>${formatRupiah(d[21])}</b></td>
+                        </tr>
 
-    <!-- FOOTER -->
-    <div class="footer">
-        <div>
-            Pengurus<br>
-            YAYASAN KESEHATNAN IMANUEL<br><br><br><br><br><br>
-            <b><u>May Maria Santosa</u></b><br>
-            <b>Bendahara</b>
-        </div>
-        <div>
-            Manado, ${bulanExcel}<br>
-            Yang Menerima<br><br><br><br><br><br>
-            <b><u>${d[1]}</u></b>
-        </div>
-    </div>
+                    </table>
 
-</div>
+                    <!-- FOOTER -->
+                    <div class="footer">
+                        <div>
+                            Pengurus<br>
+                                YAYASAN KESEHATNAN IMANUEL<br><br><br><br><br><br>
+                                    <b><u>May Maria Santosa</u></b><br>
+                                        <b>Bendahara</b>
+                        </div>
+                        <div>
+                            Manado, ${bulanExcel}<br>
+                            Yang Menerima<br><br><br><br><br><br>
+                            <b><u>${d[1]}</u></b>
+                        </div>
+                    </div>
+
+                </div>
 `;
                 allTemplate += template;
             });
